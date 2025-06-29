@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Zap, Clock, DollarSign, Sparkles, Brain } from 'lucide-react';
+import { Send, Bot, User, Zap, Clock, DollarSign, Sparkles, Brain, AlertCircle, Key } from 'lucide-react';
 import { AIModel, Message, Conversation } from '../types';
 import { analyzePrompt, selectBestModel, calculateCost, estimateTokens } from '../utils/modelSelector';
-import { generateIntelligentResponse } from '../utils/responseGenerator';
+import { AIProviderService } from '../services/aiProviders';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ChatInterfaceProps {
@@ -17,6 +17,7 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [modelSelection, setModelSelection] = useState<any>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -31,6 +32,7 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    setApiError(null);
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
@@ -69,21 +71,22 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
     setInput('');
     setIsLoading(true);
 
-    // Generate intelligent response
-    setTimeout(() => {
-      const inputTokens = estimateTokens(currentInput);
-      const response = generateIntelligentResponse(currentInput, selection.selectedModel, conversation?.messages || []);
-      const outputTokens = estimateTokens(response);
-      const cost = calculateCost(selection.selectedModel, inputTokens, outputTokens);
+    try {
+      // Call the actual AI model API
+      const response = await AIProviderService.callModel(
+        selection.selectedModel,
+        currentInput,
+        conversation?.messages || []
+      );
 
       const assistantMessage: Message = {
         id: uuidv4(),
         role: 'assistant',
-        content: response,
+        content: response.content,
         timestamp: new Date(),
         modelUsed: selection.selectedModel,
-        tokens: inputTokens + outputTokens,
-        cost: cost,
+        tokens: response.tokens.total,
+        cost: response.cost,
         reasoning: selection.reasoning
       };
 
@@ -91,17 +94,69 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
         ...updatedConversation,
         messages: [...updatedConversation.messages, assistantMessage],
         updatedAt: new Date(),
-        totalTokens: updatedConversation.totalTokens + inputTokens + outputTokens,
-        totalCost: updatedConversation.totalCost + cost
+        totalTokens: updatedConversation.totalTokens + response.tokens.total,
+        totalCost: updatedConversation.totalCost + response.cost
       };
 
       onUpdateConversation(finalConversation);
+    } catch (error: any) {
+      console.error('AI API Error:', error);
+      setApiError(error.message || 'Failed to get response from AI model');
+      
+      // Create error message
+      const errorMessage: Message = {
+        id: uuidv4(),
+        role: 'assistant',
+        content: `I apologize, but I encountered an error while trying to get a response from ${selection.selectedModel.name}. Please check your API configuration and try again.`,
+        timestamp: new Date(),
+        modelUsed: selection.selectedModel,
+        tokens: 0,
+        cost: 0,
+        reasoning: 'Error occurred during API call'
+      };
+
+      const errorConversation: Conversation = {
+        ...updatedConversation,
+        messages: [...updatedConversation.messages, errorMessage],
+        updatedAt: new Date()
+      };
+
+      onUpdateConversation(errorConversation);
+    } finally {
       setIsLoading(false);
-    }, 1500 + Math.random() * 2000);
+    }
+  };
+
+  const hasApiKeys = () => {
+    return !!(
+      import.meta.env.VITE_OPENAI_API_KEY ||
+      import.meta.env.VITE_ANTHROPIC_API_KEY ||
+      import.meta.env.VITE_GOOGLE_API_KEY
+    );
   };
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-slate-50/50 to-blue-50/30">
+      {/* API Configuration Warning */}
+      {!hasApiKeys() && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 m-4 bg-amber-50 border border-amber-200 rounded-2xl"
+        >
+          <div className="flex items-center space-x-3">
+            <Key className="w-5 h-5 text-amber-600" />
+            <div>
+              <h4 className="font-medium text-amber-900">API Keys Required</h4>
+              <p className="text-sm text-amber-700">
+                Configure your API keys in environment variables to get real responses from AI models.
+                Currently showing simulated responses.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Enhanced Model Selection Display */}
       <AnimatePresence>
         {modelSelection && (
@@ -157,6 +212,23 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
         )}
       </AnimatePresence>
 
+      {/* Error Display */}
+      {apiError && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 m-4 bg-red-50 border border-red-200 rounded-2xl"
+        >
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <div>
+              <h4 className="font-medium text-red-900">API Error</h4>
+              <p className="text-sm text-red-700">{apiError}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
         {!conversation?.messages.length && (
@@ -175,13 +247,13 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
             </h3>
             <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
               Ask me anything! I'll automatically select the best AI model for your specific task, 
-              provide intelligent responses, and maintain context throughout our conversation.
+              provide real responses from leading AI providers, and maintain context throughout our conversation.
             </p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
               {[
-                { icon: '💻', title: 'Code & Development', desc: 'Programming, debugging, architecture' },
-                { icon: '✍️', title: 'Writing & Content', desc: 'Articles, stories, marketing copy' },
-                { icon: '🧠', title: 'Analysis & Research', desc: 'Data analysis, research, insights' }
+                { icon: '💻', title: 'Code & Development', desc: 'Programming, debugging, architecture', prompt: 'Help me write a Python function to sort a list' },
+                { icon: '✍️', title: 'Writing & Content', desc: 'Articles, stories, marketing copy', prompt: 'Write a compelling product description for a new app' },
+                { icon: '🧠', title: 'Analysis & Research', desc: 'Data analysis, research, insights', prompt: 'Analyze the pros and cons of remote work' }
               ].map((item, index) => (
                 <motion.div
                   key={item.title}
@@ -189,7 +261,7 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.1 }}
                   className="card p-4 text-center hover:scale-105 transition-transform cursor-pointer"
-                  onClick={() => setInput(`Help me with ${item.title.toLowerCase()}`)}
+                  onClick={() => setInput(item.prompt)}
                 >
                   <div className="text-2xl mb-2">{item.icon}</div>
                   <h4 className="font-semibold text-slate-900 mb-1">{item.title}</h4>
@@ -231,7 +303,7 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
                 
                 <div className="flex-1 min-w-0">
                   <div className="prose prose-slate max-w-none">
-                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
                   </div>
                   
                   {message.role === 'assistant' && message.modelUsed && (
@@ -288,7 +360,9 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-slate-600 font-medium">Thinking</span>
+                  <span className="text-slate-600 font-medium">
+                    {selectedModel?.name} is thinking
+                  </span>
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -311,7 +385,7 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me anything... I'll choose the best AI model and provide intelligent answers"
+              placeholder="Ask me anything... I'll choose the best AI model and provide real responses"
               className="w-full px-6 py-4 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-slate-900 placeholder-slate-500 text-lg"
               disabled={isLoading}
             />
@@ -321,7 +395,7 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
                 animate={{ opacity: 1, scale: 1 }}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-slate-400"
               >
-                {estimateTokens(input)} tokens
+                ~{estimateTokens(input)} tokens
               </motion.div>
             )}
           </div>
@@ -346,11 +420,11 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
         {/* Quick Actions */}
         <div className="mt-4 flex flex-wrap gap-2">
           {[
-            'Explain quantum computing',
-            'Write a Python function',
-            'Create a marketing strategy',
-            'Analyze this data',
-            'Help me debug code'
+            'Explain quantum computing in simple terms',
+            'Write a Python function to reverse a string',
+            'Create a marketing strategy for a new app',
+            'Analyze the benefits of renewable energy',
+            'Help me debug this JavaScript code'
           ].map((suggestion) => (
             <button
               key={suggestion}

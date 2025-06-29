@@ -2,7 +2,7 @@ import { AIModel } from '../types';
 
 export const aiModels: AIModel[] = [
   {
-    id: 'gpt-4-turbo',
+    id: 'gpt-4-turbo-preview',
     name: 'GPT-4 Turbo',
     provider: 'OpenAI',
     description: 'Most capable model for complex reasoning, analysis, and creative tasks',
@@ -15,7 +15,7 @@ export const aiModels: AIModel[] = [
     icon: '🧠'
   },
   {
-    id: 'claude-3-opus',
+    id: 'claude-3-opus-20240229',
     name: 'Claude 3 Opus',
     provider: 'Anthropic',
     description: 'Excellent for nuanced conversations, analysis, and ethical reasoning',
@@ -26,6 +26,19 @@ export const aiModels: AIModel[] = [
     responseTime: 'medium',
     accuracy: 94,
     icon: '🎭'
+  },
+  {
+    id: 'claude-3-sonnet-20240229',
+    name: 'Claude 3 Sonnet',
+    provider: 'Anthropic',
+    description: 'Balanced model for general tasks with good speed and accuracy',
+    capabilities: ['reasoning', 'analysis', 'creative-writing', 'code', 'research'],
+    strengths: ['Balanced performance', 'Versatility', 'Cost-effective', 'Reliable'],
+    pricing: { inputTokens: 0.003, outputTokens: 0.015 },
+    maxTokens: 200000,
+    responseTime: 'fast',
+    accuracy: 90,
+    icon: '🎵'
   },
   {
     id: 'gemini-pro',
@@ -41,59 +54,20 @@ export const aiModels: AIModel[] = [
     icon: '💎'
   },
   {
-    id: 'llama-2-70b',
-    name: 'Llama 2 70B',
-    provider: 'Meta',
-    description: 'Open-source model great for general tasks and customization',
+    id: 'gpt-3.5-turbo',
+    name: 'GPT-3.5 Turbo',
+    provider: 'OpenAI',
+    description: 'Fast and cost-effective for general tasks and conversations',
     capabilities: ['reasoning', 'code', 'creative-writing', 'chat'],
-    strengths: ['Open source', 'Customizable', 'Cost-effective', 'Privacy'],
-    pricing: { inputTokens: 0.0007, outputTokens: 0.0009 },
-    maxTokens: 4096,
+    strengths: ['Speed', 'Cost-effective', 'Versatile', 'Reliable'],
+    pricing: { inputTokens: 0.0005, outputTokens: 0.0015 },
+    maxTokens: 16385,
     responseTime: 'fast',
     accuracy: 85,
-    icon: '🦙'
+    icon: '⚡'
   },
   {
-    id: 'codellama-34b',
-    name: 'CodeLlama 34B',
-    provider: 'Meta',
-    description: 'Specialized for code generation, debugging, and programming tasks',
-    capabilities: ['code', 'debugging', 'refactoring', 'documentation'],
-    strengths: ['Code generation', 'Debugging', 'Multiple languages', 'Documentation'],
-    pricing: { inputTokens: 0.0005, outputTokens: 0.0008 },
-    maxTokens: 16384,
-    responseTime: 'fast',
-    accuracy: 92,
-    icon: '💻'
-  },
-  {
-    id: 'mistral-large',
-    name: 'Mistral Large',
-    provider: 'Mistral AI',
-    description: 'European AI model with strong multilingual capabilities',
-    capabilities: ['reasoning', 'multilingual', 'code', 'analysis'],
-    strengths: ['Multilingual', 'European compliance', 'Reasoning', 'Efficiency'],
-    pricing: { inputTokens: 0.008, outputTokens: 0.024 },
-    maxTokens: 32000,
-    responseTime: 'medium',
-    accuracy: 90,
-    icon: '🌍'
-  },
-  {
-    id: 'palm-2',
-    name: 'PaLM 2',
-    provider: 'Google',
-    description: 'Efficient model for reasoning and multilingual tasks',
-    capabilities: ['reasoning', 'multilingual', 'math', 'science'],
-    strengths: ['Multilingual', 'Scientific reasoning', 'Mathematics', 'Efficiency'],
-    pricing: { inputTokens: 0.0005, outputTokens: 0.001 },
-    maxTokens: 8192,
-    responseTime: 'fast',
-    accuracy: 87,
-    icon: '🌴'
-  },
-  {
-    id: 'claude-3-haiku',
+    id: 'claude-3-haiku-20240307',
     name: 'Claude 3 Haiku',
     provider: 'Anthropic',
     description: 'Fast and cost-effective for simple tasks and quick responses',
