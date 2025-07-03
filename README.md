@@ -1,4 +1,3 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/README.md b/README.md
 index c3a697eff46172d56eb0c80b0b190894b00215d6..425c8c609071246eda6c2322618a61d0fdbd91eb 100644
 --- a/README.md
@@ -39,6 +38,3 @@ index c3a697eff46172d56eb0c80b0b190894b00215d6..425c8c609071246eda6c2322618a61d0
 +## Overview
 +
 +The UI lets you chat with different models. The application automatically picks the model that best fits the prompt and keeps track of token usage and cost.
- 
-EOF
-)
