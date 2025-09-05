@@ -3,6 +3,21 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
 import { AIModel } from '../types';
 
+codex/remove-bolt-branding-and-add-apis-l097l2
+// Helper to read API keys from env or local storage
+function getApiKey(provider: 'openai' | 'anthropic' | 'google'): string {
+  const envKey =
+    (import.meta.env as any)[`VITE_${provider.toUpperCase()}_API_KEY`] || '';
+
+  if (envKey) return envKey;
+
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(`${provider.toUpperCase()}_API_KEY`) || '';
+  }
+
+  return '';
+}
+
 // API Configuration
 const API_KEYS = {
   openai: import.meta.env.VITE_OPENAI_API_KEY || '',
@@ -22,6 +37,7 @@ const anthropic = new Anthropic({
 } as any);
 
 const genAI = new GoogleGenerativeAI(API_KEYS.google);
+main
 
 export interface AIResponse {
   content: string;
@@ -37,6 +53,11 @@ export interface AIResponse {
 export class AIProviderService {
   static async callOpenAI(model: AIModel, prompt: string, conversationHistory: any[] = []): Promise<AIResponse> {
     try {
+      const client = new OpenAI({
+        apiKey: getApiKey('openai'),
+        dangerouslyAllowBrowser: true,
+      } as any);
+
       const messages = [
         ...conversationHistory.map(msg => ({
           role: msg.role,
@@ -45,7 +66,7 @@ export class AIProviderService {
         { role: 'user', content: prompt }
       ];
 
-      const response = await openai.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: model.id,
         messages: messages as any,
         max_tokens: Math.min(4000, model.maxTokens),
@@ -73,6 +94,11 @@ export class AIProviderService {
 
   static async callAnthropic(model: AIModel, prompt: string, conversationHistory: any[] = []): Promise<AIResponse> {
     try {
+      const client = new Anthropic({
+        apiKey: getApiKey('anthropic'),
+        dangerouslyAllowBrowser: true,
+      } as any);
+
       const messages = conversationHistory.map(msg => ({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
         content: msg.content
@@ -80,7 +106,11 @@ export class AIProviderService {
 
       messages.push({ role: 'user', content: prompt });
 
+ codex/remove-bolt-branding-and-add-apis-l097l2
+      const response = await (client as any).messages.create({
+
       const response = await (anthropic as any).messages.create({
+ main
         model: model.id,
         max_tokens: Math.min(4000, model.maxTokens),
         messages: messages as any,
@@ -107,6 +137,7 @@ export class AIProviderService {
 
   static async callGoogle(model: AIModel, prompt: string, conversationHistory: any[] = []): Promise<AIResponse> {
     try {
+      const genAI = new GoogleGenerativeAI(getApiKey('google'));
       const genModel = genAI.getGenerativeModel({ model: model.id });
       
       // Build conversation history for Google
@@ -159,16 +190,7 @@ export class AIProviderService {
   }
 
   private static hasValidApiKey(provider: string): boolean {
-    switch (provider.toLowerCase()) {
-      case 'openai':
-        return !!API_KEYS.openai;
-      case 'anthropic':
-        return !!API_KEYS.anthropic;
-      case 'google':
-        return !!API_KEYS.google;
-      default:
-        return false;
-    }
+    return !!getApiKey(provider as any);
   }
 
   private static calculateCost(model: AIModel, inputTokens: number, outputTokens: number): number {

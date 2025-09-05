@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Zap, Clock, DollarSign, Sparkles, Brain, AlertCircle, Key } from 'lucide-react';
+import { Send, Bot, User, Zap, Clock, DollarSign, Sparkles, Brain, AlertCircle, Key, X } from 'lucide-react';
 import { AIModel, Message, Conversation } from '../types';
 import { analyzePrompt, selectBestModel, calculateCost, estimateTokens } from '../utils/modelSelector';
 import { AIProviderService } from '../services/aiProviders';
@@ -18,6 +18,28 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [modelSelection, setModelSelection] = useState<any>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [showApiWarning, setShowApiWarning] = useState(true);
+  const [apiKeys, setApiKeys] = useState({
+    openai: '',
+    anthropic: '',
+    google: '',
+  });
+  const hasApiKeys = (keys = apiKeys) => {
+    return !!(
+      import.meta.env.VITE_OPENAI_API_KEY ||
+      keys.openai ||
+      import.meta.env.VITE_ANTHROPIC_API_KEY ||
+      keys.anthropic ||
+      import.meta.env.VITE_GOOGLE_API_KEY ||
+      keys.google
+    );
+  };
+  const saveApiKeys = () => {
+    if (apiKeys.openai) localStorage.setItem('OPENAI_API_KEY', apiKeys.openai);
+    if (apiKeys.anthropic) localStorage.setItem('ANTHROPIC_API_KEY', apiKeys.anthropic);
+    if (apiKeys.google) localStorage.setItem('GOOGLE_API_KEY', apiKeys.google);
+    setShowApiWarning(!hasApiKeys());
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -27,6 +49,18 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
   useEffect(() => {
     scrollToBottom();
   }, [conversation?.messages]);
+
+  useEffect(() => {
+    const stored = {
+      openai: localStorage.getItem('OPENAI_API_KEY') || '',
+      anthropic: localStorage.getItem('ANTHROPIC_API_KEY') || '',
+      google: localStorage.getItem('GOOGLE_API_KEY') || '',
+    };
+    setApiKeys(stored);
+    if (hasApiKeys(stored)) {
+      setShowApiWarning(false);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,32 +161,62 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
     }
   };
 
-  const hasApiKeys = () => {
-    return !!(
-      import.meta.env.VITE_OPENAI_API_KEY ||
-      import.meta.env.VITE_ANTHROPIC_API_KEY ||
-      import.meta.env.VITE_GOOGLE_API_KEY
-    );
-  };
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-slate-50/50 to-blue-50/30">
       {/* API Configuration Warning */}
-      {!hasApiKeys() && (
+      {showApiWarning && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 m-4 bg-amber-50 border border-amber-200 rounded-2xl"
+          className="p-4 m-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3"
         >
-          <div className="flex items-center space-x-3">
-            <Key className="w-5 h-5 text-amber-600" />
-            <div>
-              <h4 className="font-medium text-amber-900">API Keys Required</h4>
-              <p className="text-sm text-amber-700">
-                Configure your API keys in environment variables to get real responses from AI models.
-                Currently showing simulated responses.
-              </p>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <Key className="w-5 h-5 text-amber-600" />
+              <div>
+                <h4 className="font-medium text-amber-900">API Keys Required</h4>
+                <p className="text-sm text-amber-700">
+                  Enter your provider keys below to enable real responses. Keys are stored only in your browser.
+                </p>
+              </div>
             </div>
+            <button
+              className="text-amber-700 hover:text-amber-900"
+              onClick={() => setShowApiWarning(false)}
+              aria-label="Close API key prompt"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="space-y-2">
+            <input
+              type="password"
+              placeholder="OpenAI API Key"
+              value={apiKeys.openai}
+              onChange={e => setApiKeys({ ...apiKeys, openai: e.target.value })}
+              className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm"
+            />
+            <input
+              type="password"
+              placeholder="Anthropic API Key"
+              value={apiKeys.anthropic}
+              onChange={e => setApiKeys({ ...apiKeys, anthropic: e.target.value })}
+              className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm"
+            />
+            <input
+              type="password"
+              placeholder="Google API Key"
+              value={apiKeys.google}
+              onChange={e => setApiKeys({ ...apiKeys, google: e.target.value })}
+              className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm"
+            />
+            <button
+              onClick={saveApiKeys}
+              className="w-full mt-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700"
+            >
+              Save Keys
+            </button>
           </div>
         </motion.div>
       )}
