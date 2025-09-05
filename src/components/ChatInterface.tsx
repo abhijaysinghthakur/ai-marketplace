@@ -5,6 +5,8 @@ import { AIModel, Message, Conversation } from '../types';
 import { analyzePrompt, selectBestModel, calculateCost, estimateTokens } from '../utils/modelSelector';
 import { AIProviderService } from '../services/aiProviders';
 import { v4 as uuidv4 } from 'uuid';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatInterfaceProps {
   conversation: Conversation | null;
@@ -366,8 +368,10 @@ export function ChatInterface({ conversation, onUpdateConversation, onNewConvers
                 )}
                 
                 <div className="flex-1 min-w-0">
-                  <div className="prose prose-slate max-w-none">
-                    <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
+                  <div className="prose prose-slate max-w-none whitespace-pre-wrap leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
                   </div>
                   
                   {message.role === 'assistant' && message.modelUsed && (
