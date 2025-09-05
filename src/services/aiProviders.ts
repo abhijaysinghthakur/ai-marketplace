@@ -14,12 +14,12 @@ const API_KEYS = {
 const openai = new OpenAI({
   apiKey: API_KEYS.openai,
   dangerouslyAllowBrowser: true
-});
+} as any);
 
 const anthropic = new Anthropic({
   apiKey: API_KEYS.anthropic,
   dangerouslyAllowBrowser: true
-});
+} as any);
 
 const genAI = new GoogleGenerativeAI(API_KEYS.google);
 
@@ -80,7 +80,7 @@ export class AIProviderService {
 
       messages.push({ role: 'user', content: prompt });
 
-      const response = await anthropic.messages.create({
+      const response = await (anthropic as any).messages.create({
         model: model.id,
         max_tokens: Math.min(4000, model.maxTokens),
         messages: messages as any,
