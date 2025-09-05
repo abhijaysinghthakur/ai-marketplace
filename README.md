@@ -28,7 +28,13 @@ This project is a demo React application that selects the best large language mo
    npm run dev
    ```
    When keys are present the app will call the actual APIs; otherwise it falls back to simulated answers.
+codex/remove-bolt-branding-and-add-apis-n5qluu
    You can also paste keys directly in the app if you prefer not to store them in `.env`.
+
+codex/remove-bolt-branding-and-add-apis-l097l2
+   You can also paste keys directly in the app if you prefer not to store them in `.env`.
+ main
+ main
 
 ## Overview
 

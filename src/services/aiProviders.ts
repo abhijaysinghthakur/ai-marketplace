@@ -3,6 +3,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
 import { AIModel } from '../types';
 
+ codex/remove-bolt-branding-and-add-apis-n5qluu
+
+codex/remove-bolt-branding-and-add-apis-l097l2
+ main
 // Helper to read API keys from env or local storage
 function getApiKey(provider: 'openai' | 'anthropic' | 'google'): string {
   const envKey =
@@ -16,6 +20,30 @@ function getApiKey(provider: 'openai' | 'anthropic' | 'google'): string {
 
   return '';
 }
+codex/remove-bolt-branding-and-add-apis-n5qluu
+
+
+// API Configuration
+const API_KEYS = {
+  openai: import.meta.env.VITE_OPENAI_API_KEY || '',
+  anthropic: import.meta.env.VITE_ANTHROPIC_API_KEY || '',
+  google: import.meta.env.VITE_GOOGLE_API_KEY || '',
+};
+
+// Initialize clients
+const openai = new OpenAI({
+  apiKey: API_KEYS.openai,
+  dangerouslyAllowBrowser: true
+} as any);
+
+const anthropic = new Anthropic({
+  apiKey: API_KEYS.anthropic,
+  dangerouslyAllowBrowser: true
+} as any);
+
+const genAI = new GoogleGenerativeAI(API_KEYS.google);
+main
+main
 
 export interface AIResponse {
   content: string;
@@ -84,7 +112,15 @@ export class AIProviderService {
 
       messages.push({ role: 'user', content: prompt });
 
+ codex/remove-bolt-branding-and-add-apis-n5qluu
       const response = await (client as any).messages.create({
+
+ codex/remove-bolt-branding-and-add-apis-l097l2
+      const response = await (client as any).messages.create({
+
+      const response = await (anthropic as any).messages.create({
+ main
+ main
         model: model.id,
         max_tokens: Math.min(4000, model.maxTokens),
         messages: messages as any,
